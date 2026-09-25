@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="it" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RGB Color Lab - Codifica Digitale e Sintesi Additiva</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        rgbRed: '#ff3344',
+                        rgbGreen: '#10b981',
+                        rgbBlue: '#3b82f6',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .color-channel-bar {
+            transition: height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .glow-red { box-shadow: 0 0 25px rgba(255, 51, 68, 0.4); }
+        .glow-green { box-shadow: 0 0 25px rgba(16, 185, 129, 0.4); }
+        .glow-blue { box-shadow: 0 0 25px rgba(59, 130, 246, 0.4); }
+        .glow-white { box-shadow: 0 0 30px rgba(255, 255, 255, 0.3); }
+        
+        /* Custom scrollbar for clean UI */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        canvas {
+            touch-action: none;
+            cursor: crosshair;
+        }
+
+        .liquid-fill {
+            transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col font-sans antialiased bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 via-green-500 to-blue-500 p-0.5 shadow-lg">
+                    <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                        <span class="text-xl">💡</span>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-red-400 via-green-400 to-blue-400 bg-clip-text text-transparent">
+                        RGB Color Lab
+                    </h1>
+                    <p class="text-xs text-slate-400">Esploratore Interattivo di Sintesi Additiva e Codifica Digitale</p>
+                </div>
+            </div>
+
+            <!-- Tab Switcher -->
+            <nav class="flex bg-slate-950 p-1.5 rounded-xl border border-slate-800 w-full sm:w-auto">
+                <button id="tab1Btn" onclick="switchTab('tab1')" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 bg-indigo-600 text-white shadow-md">
+                    <span>🎨</span>
+                    <span>Pittura Additiva</span>
+                </button>
+                <button id="tab2Btn" onclick="switchTab('tab2')" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white transition-all duration-200 flex items-center justify-center gap-2">
+                    <span>🔍</span>
+                    <span>Scomposizione HEX & RGB</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- TAB 1: Pittura Additiva -->
+        <section id="tab1" class="space-y-6">
+            <!-- Educational Banner -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="flex items-start gap-4">
+                    <span class="text-2xl p-2 bg-slate-800/80 rounded-xl border border-slate-700">💡</span>
+                    <div>
+                        <h2 class="text-base font-bold text-indigo-300">Concetto Chiave: La Luce si Somma!</h2>
+                        <p class="text-sm text-slate-300 mt-1 leading-relaxed">
+                            A differenza delle tempere su carta (sintesi sottrattiva), sugli schermi digitali si parte dal <strong class="text-white bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">NERO ASSOLUTO</strong> (assenza di luce). 
+                            Aggiungere un colore primario significa <strong>accendere o aumentare l'intensità</strong> del relativo LED luminoso (Rosso, Verde o Blu). Sovrapponendo più fasci di luce, i colori diventano sempre più chiari fino a creare il <strong>BIANCO</strong>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Interactive Workspace -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <!-- Left Control Panel -->
+                <div class="lg:col-span-4 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-6 shadow-xl">
+                    <div>
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3">1. Scegli Pennello Primario</h3>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button id="brushRed" onclick="selectBrush('red')" class="p-3 rounded-xl border border-red-500/50 bg-red-950/40 text-red-400 font-bold flex flex-col items-center gap-1.5 transition-all hover:bg-red-900/50 ring-2 ring-red-500">
+                                <span class="w-5 h-5 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]"></span>
+                                <span class="text-xs">ROSSO</span>
+                            </button>
+                            <button id="brushGreen" onclick="selectBrush('green')" class="p-3 rounded-xl border border-emerald-500/30 bg-emerald-950/20 text-emerald-400 font-bold flex flex-col items-center gap-1.5 transition-all hover:bg-emerald-900/50">
+                                <span class="w-5 h-5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]"></span>
+                                <span class="text-xs">VERDE</span>
+                            </button>
+                            <button id="brushBlue" onclick="selectBrush('blue')" class="p-3 rounded-xl border border-blue-500/30 bg-blue-950/20 text-blue-400 font-bold flex flex-col items-center gap-1.5 transition-all hover:bg-blue-900/50">
+                                <span class="w-5 h-5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]"></span>
+                                <span class="text-xs">BLU</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Brush Power / Intensity -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400">2. Intensità della Pennellata</h3>
+                            <span id="intensityValText" class="font-mono text-xs text-indigo-400 font-bold bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800">+50 Luce</span>
+                        </div>
+                        <div class="grid grid-cols-4 gap-1.5 mb-3">
+                            <button onclick="setIntensity(25)" class="intensityBtn text-xs py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg font-semibold transition text-slate-300">Soft (+25)</button>
+                            <button onclick="setIntensity(50)" class="intensityBtn active-intensity text-xs py-1.5 bg-indigo-600 rounded-lg font-semibold transition text-white shadow-md">Media (+50)</button>
+                            <button onclick="setIntensity(100)" class="intensityBtn text-xs py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg font-semibold transition text-slate-300">Forte (+100)</button>
+                            <button onclick="setIntensity(255)" class="intensityBtn text-xs py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg font-semibold transition text-slate-300">Max (+255)</button>
+                        </div>
+                        <label class="block text-xs text-slate-400 mb-1">Dimensione Pennello:</label>
+                        <input type="range" id="brushSize" min="15" max="80" value="35" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                    </div>
+
+                    <!-- Canvas Utilities -->
+                    <div class="pt-2 border-t border-slate-800 space-y-2">
+                        <div class="flex gap-2">
+                            <button onclick="toggleGrid()" id="gridBtn" class="flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border border-slate-700 text-slate-300 transition">
+                                <span>🌐</span>
+                                <span>Griglia Pixel</span>
+                            </button>
+                            <button onclick="clearCanvas()" class="flex-1 py-2 px-3 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/60 text-rose-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition">
+                                <span>🗑️</span>
+                                <span>Pulisci Tela</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Global Mixer Swatch -->
+                    <div class="pt-4 border-t border-slate-800">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center justify-between">
+                            <span>Mixer Veloce Test</span>
+                            <span class="text-[10px] text-slate-500 font-normal">Sperimentazione diretta</span>
+                        </h3>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="text-red-400 font-bold w-4">R</span>
+                                <input type="range" id="mixerR" min="0" max="255" value="0" oninput="updateMixer()" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-red-500">
+                                <span id="mixerRVal" class="font-mono text-slate-400 w-7 text-right">0</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-emerald-400 font-bold w-4">G</span>
+                                <input type="range" id="mixerG" min="0" max="255" value="0" oninput="updateMixer()" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                                <span id="mixerGVal" class="font-mono text-slate-400 w-7 text-right">0</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-blue-400 font-bold w-4">B</span>
+                                <input type="range" id="mixerB" min="0" max="255" value="0" oninput="updateMixer()" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                                <span id="mixerBVal" class="font-mono text-slate-400 w-7 text-right">0</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3 flex items-center gap-3 bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                            <div id="mixerPreview" class="w-10 h-10 rounded-lg border border-slate-700 bg-black shadow-inner transition-colors"></div>
+                            <div class="text-xs space-y-0.5">
+                                <div id="mixerHex" class="font-mono font-bold text-white">#000000</div>
+                                <div id="mixerRgb" class="text-slate-400 text-[11px]">rgb(0, 0, 0)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Canvas & Real-Time Inspector Area -->
+                <div class="lg:col-span-8 space-y-4">
+                    <!-- Canvas Box -->
+                    <div class="relative bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-2xl overflow-hidden">
+                        
+                        <!-- Top Instructions Bar inside Canvas Container -->
+                        <div class="flex items-center justify-between text-xs text-slate-400 mb-2 px-2">
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                Tela attiva: Spennella per sommare le luci
+                            </span>
+                            <span class="hidden sm:inline text-slate-500">Usa il mouse o il dito per dipingere</span>
+                        </div>
+
+                        <!-- Canvas Wrapper -->
+                        <div id="canvasContainer" class="relative rounded-xl overflow-hidden bg-black flex items-center justify-center border border-slate-800">
+                            <canvas id="lightCanvas" width="700" height="420" class="w-full h-auto block"></canvas>
+                        </div>
+
+                        <!-- Live Pixel Magnifier / Inspector Floating Bar -->
+                        <div class="mt-3 bg-slate-950/90 border border-slate-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+                            <div class="flex items-center gap-3">
+                                <div id="inspectorSwatch" class="w-9 h-9 rounded-lg border border-slate-700 bg-black shadow-inner transition-colors"></div>
+                                <div>
+                                    <div class="text-slate-400 font-medium">Ispezione Pixel Puntato:</div>
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        <span id="inspectorHex" class="font-mono font-bold text-white text-sm">#000000</span>
+                                        <span id="inspectorRgb" class="font-mono text-slate-400 text-xs">(R: 0, G: 0, B: 0)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Individual RGB mini meters for the inspected pixel -->
+                            <div class="flex items-center gap-3">
+                                <div class="text-center">
+                                    <div class="text-[10px] text-red-400 font-bold mb-0.5">R</div>
+                                    <div class="w-12 bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                        <div id="inspectorBarR" class="bg-red-500 h-full w-0 transition-all"></div>
+                                    </div>
+                                    <span id="inspectorValR" class="font-mono text-[10px] text-slate-400">0</span>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-[10px] text-emerald-400 font-bold mb-0.5">G</div>
+                                    <div class="w-12 bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                        <div id="inspectorBarG" class="bg-emerald-500 h-full w-0 transition-all"></div>
+                                    </div>
+                                    <span id="inspectorValG" class="font-mono text-[10px] text-slate-400">0</span>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-[10px] text-blue-400 font-bold mb-0.5">B</div>
+                                    <div class="w-12 bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                        <div id="inspectorBarB" class="bg-blue-500 h-full w-0 transition-all"></div>
+                                    </div>
+                                    <span id="inspectorValB" class="font-mono text-[10px] text-slate-400">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- TAB 2: Scomposizione HEX e Canali RGB -->
+        <section id="tab2" class="space-y-6 hidden">
+            <!-- Educational Header Card -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div class="flex items-start gap-4">
+                    <span class="text-2xl p-2 bg-slate-800/80 rounded-xl border border-slate-700">🔍</span>
+                    <div>
+                        <h2 class="text-base font-bold text-indigo-300">Come funziona il Codice Esadecimale (#RRGGBB)?</h2>
+                        <p class="text-sm text-slate-300 mt-1 leading-relaxed">
+                            Un codice esadecimale racchiude l'intensità di tre canali luminosi in soli 6 caratteri. 
+                            I valori vanno da <code class="text-amber-300 font-mono">00</code> (0% di luce, spento) fino a <code class="text-amber-300 font-mono">FF</code> (255, 100% di luce massima).
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input & Color Presets -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                    
+                    <!-- Direct HEX / Color Picker Input -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Seleziona o digita un colore:</label>
+                        <div class="flex gap-3">
+                            <div class="relative flex-1">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center font-mono text-slate-400 font-bold">#</span>
+                                <input type="text" id="hexInput" value="FFA500" maxlength="6" oninput="handleHexInput(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-8 pr-4 py-2.5 font-mono text-base font-bold text-white focus:outline-none focus:border-indigo-500 uppercase tracking-widest transition">
+                            </div>
+                            <div class="relative w-12 h-11 rounded-xl overflow-hidden border border-slate-700 bg-slate-950 flex-shrink-0 cursor-pointer">
+                                <input type="color" id="nativeColorPicker" value="#FFA500" oninput="handleColorPicker(this.value)" class="absolute -inset-2 w-16 h-16 cursor-pointer border-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Preset Buttons -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Colori Rapidi di Prova:</label>
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="setPreset('#FFA500')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center gap-1.5 transition">
+                                <span class="w-3 h-3 rounded-full bg-[#FFA500]"></span> Arancione
+                            </button>
+                            <button onclick="setPreset('#FFF700')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center gap-1.5 transition">
+                                <span class="w-3 h-3 rounded-full bg-[#FFF700]"></span> Giallo Limone
+                            </button>
+                            <button onclick="setPreset('#00FFFF')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center gap-1.5 transition">
+                                <span class="w-3 h-3 rounded-full bg-[#00FFFF]"></span> Ciano
+                            </button>
+                            <button onclick="setPreset('#FF00FF')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center gap-1.5 transition">
+                                <span class="w-3 h-3 rounded-full bg-[#FF00FF]"></span> Magenta
+                            </button>
+                            <button onclick="setPreset('#FF69B4')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center gap-1.5 transition">
+                                <span class="w-3 h-3 rounded-full bg-[#FF69B4]"></span> Rosa
+                            </button>
+                            <button onclick="setPreset('#8B4513')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center gap-1.5 transition">
+                                <span class="w-3 h-3 rounded-full bg-[#8B4513]"></span> Marrone
+                            </button>
+                            <button onclick="setPreset('#50C878')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center gap-1.5 transition">
+                                <span class="w-3 h-3 rounded-full bg-[#50C878]"></span> Verde Smeraldo
+                            </button>
+                            <button onclick="setPreset('#800080')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center gap-1.5 transition">
+                                <span class="w-3 h-3 rounded-full bg-[#800080]"></span> Viola
+                            </button>
+                            <button onclick="setPreset('#808080')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center gap-1.5 transition">
+                                <span class="w-3 h-3 rounded-full bg-[#808080]"></span> Grigio
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Preview Box + HEX Token Mapping -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center pt-4 border-t border-slate-800">
+                    
+                    <!-- Color Swatch Display -->
+                    <div class="md:col-span-5 flex flex-col items-center justify-center p-6 bg-slate-950 rounded-2xl border border-slate-800 relative overflow-hidden">
+                        <div id="decompBigPreview" class="w-28 h-28 rounded-2xl border-2 border-slate-700 shadow-2xl transition-all duration-300" style="background-color: #FFA500;"></div>
+                        <div class="mt-4 text-center">
+                            <span id="decompHexTitle" class="text-2xl font-mono font-bold tracking-wider text-white">#FFA500</span>
+                            <div id="decompRgbTitle" class="text-xs font-mono text-slate-400 mt-1">rgb(255, 165, 0)</div>
+                        </div>
+                    </div>
+
+                    <!-- Visual Breakdown Banner (# RR GG BB) -->
+                    <div class="md:col-span-7 bg-slate-950/60 p-5 rounded-2xl border border-slate-800 space-y-3">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Struttura della Notazione Esadecimale</h3>
+                        
+                        <div class="flex items-center justify-center gap-2 font-mono text-2xl sm:text-3xl font-extrabold bg-slate-900 p-4 rounded-xl border border-slate-800">
+                            <span class="text-slate-500">#</span>
+                            <div class="text-center px-3 py-1 bg-red-950/60 border border-red-500/40 rounded-lg">
+                                <span id="tokenR" class="text-red-400">FF</span>
+                                <div class="text-[9px] font-sans font-normal text-red-300 uppercase tracking-normal">Rosso</div>
+                            </div>
+                            <div class="text-center px-3 py-1 bg-emerald-950/60 border border-emerald-500/40 rounded-lg">
+                                <span id="tokenG" class="text-emerald-400">A5</span>
+                                <div class="text-[9px] font-sans font-normal text-emerald-300 uppercase tracking-normal">Verde</div>
+                            </div>
+                            <div class="text-center px-3 py-1 bg-blue-950/60 border border-blue-500/40 rounded-lg">
+                                <span id="tokenB" class="text-blue-400">00</span>
+                                <div class="text-[9px] font-sans font-normal text-blue-300 uppercase tracking-normal">Blu</div>
+                            </div>
+                        </div>
+                        <p id="decompExplanation" class="text-xs text-slate-300 text-center leading-relaxed">
+                            L'Arancione è composto da <strong>Rosso al massimo (FF = 255)</strong>, un'abbondante dose di <strong>Verde (A5 = 165)</strong> e <strong>zero Blu (00 = 0)</strong>.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 3 Graphical Liquid / Splash Containers -->
+                <div class="pt-6 border-t border-slate-800">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-6 text-center">Contributo dei Canali Primari di Luce</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        
+                        <!-- RED Channel Splash Container -->
+                        <div class="bg-slate-950 p-5 rounded-2xl border border-red-900/30 flex flex-col items-center relative overflow-hidden">
+                            <div class="text-xs font-bold text-red-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                                Canale Rosso (R)
+                            </div>
+                            
+                            <!-- Visual Liquid Cylinder -->
+                            <div class="w-20 h-48 bg-slate-900 border-2 border-red-900/50 rounded-2xl relative flex items-end overflow-hidden shadow-inner my-2">
+                                <div id="liquidR" class="liquid-fill w-full bg-gradient-to-t from-red-700 to-red-500 rounded-b-xl relative" style="height: 100%;">
+                                    <div class="absolute inset-x-0 top-0 h-1 bg-red-300/60"></div>
+                                </div>
+                            </div>
+
+                            <!-- Channel Statistics -->
+                            <div class="w-full text-center space-y-1 mt-3 pt-3 border-t border-slate-800">
+                                <div class="text-2xl font-mono font-extrabold text-red-400" id="valNumR">255 <span class="text-xs text-slate-500 font-normal">/ 255</span></div>
+                                <div class="flex justify-between text-xs font-mono px-2 text-slate-400">
+                                    <span>HEX: <strong id="valHexR" class="text-white">FF</strong></span>
+                                    <span>Luce: <strong id="valPercR" class="text-white">100%</strong></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- GREEN Channel Splash Container -->
+                        <div class="bg-slate-950 p-5 rounded-2xl border border-emerald-900/30 flex flex-col items-center relative overflow-hidden">
+                            <div class="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                Canale Verde (G)
+                            </div>
+                            
+                            <!-- Visual Liquid Cylinder -->
+                            <div class="w-20 h-48 bg-slate-900 border-2 border-emerald-900/50 rounded-2xl relative flex items-end overflow-hidden shadow-inner my-2">
+                                <div id="liquidG" class="liquid-fill w-full bg-gradient-to-t from-emerald-700 to-emerald-500 rounded-b-xl relative" style="height: 64.7%;">
+                                    <div class="absolute inset-x-0 top-0 h-1 bg-emerald-300/60"></div>
+                                </div>
+                            </div>
+
+                            <!-- Channel Statistics -->
+                            <div class="w-full text-center space-y-1 mt-3 pt-3 border-t border-slate-800">
+                                <div class="text-2xl font-mono font-extrabold text-emerald-400" id="valNumG">165 <span class="text-xs text-slate-500 font-normal">/ 255</span></div>
+                                <div class="flex justify-between text-xs font-mono px-2 text-slate-400">
+                                    <span>HEX: <strong id="valHexG" class="text-white">A5</strong></span>
+                                    <span>Luce: <strong id="valPercG" class="text-white">64.7%</strong></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BLUE Channel Splash Container -->
+                        <div class="bg-slate-950 p-5 rounded-2xl border border-blue-900/30 flex flex-col items-center relative overflow-hidden">
+                            <div class="text-xs font-bold text-blue-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                                Canale Blu (B)
+                            </div>
+                            
+                            <!-- Visual Liquid Cylinder -->
+                            <div class="w-20 h-48 bg-slate-900 border-2 border-blue-900/50 rounded-2xl relative flex items-end overflow-hidden shadow-inner my-2">
+                                <div id="liquidB" class="liquid-fill w-full bg-gradient-to-t from-blue-700 to-blue-500 rounded-b-xl relative" style="height: 0%;">
+                                    <div class="absolute inset-x-0 top-0 h-1 bg-blue-300/60"></div>
+                                </div>
+                            </div>
+
+                            <!-- Channel Statistics -->
+                            <div class="w-full text-center space-y-1 mt-3 pt-3 border-t border-slate-800">
+                                <div class="text-2xl font-mono font-extrabold text-blue-400" id="valNumB">0 <span class="text-xs text-slate-500 font-normal">/ 255</span></div>
+                                <div class="flex justify-between text-xs font-mono px-2 text-slate-400">
+                                    <span>HEX: <strong id="valHexB" class="text-white">00</strong></span>
+                                    <span>Luce: <strong id="valPercB" class="text-white">0%</strong></span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        let activeTab = 'tab1';
+        let activeBrush = 'red'; // 'red', 'green', 'blue'
+        let brushIntensity = 50;
+        let isPainting = false;
+        let showGrid = false;
+
+        // Canvas element references
+        const canvas = document.getElementById('lightCanvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        function switchTab(tabId) {
+            activeTab = tabId;
+            const tab1 = document.getElementById('tab1');
+            const tab2 = document.getElementById('tab2');
+            const btn1 = document.getElementById('tab1Btn');
+            const btn2 = document.getElementById('tab2Btn');
+
+            if (tabId === 'tab1') {
+                tab1.classList.remove('hidden');
+                tab2.classList.add('hidden');
+
+                btn1.className = 'flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 bg-indigo-600 text-white shadow-md';
+                btn2.className = 'flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white transition-all duration-200 flex items-center justify-center gap-2';
+            } else {
+                tab2.classList.remove('hidden');
+                tab1.classList.add('hidden');
+
+                btn2.className = 'flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 bg-indigo-600 text-white shadow-md';
+                btn1.className = 'flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white transition-all duration-200 flex items-center justify-center gap-2';
+                
+                // Refresh Tab 2 view
+                updateDecompositionView();
+            }
+        }
+
+        function initCanvas() {
+            // Fill initial black state
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function clearCanvas() {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            if (showGrid) drawPixelGrid();
+            updateInspectorAt(canvas.width / 2, canvas.height / 2);
+        }
+
+        function selectBrush(color) {
+            activeBrush = color;
+            const btnR = document.getElementById('brushRed');
+            const btnG = document.getElementById('brushGreen');
+            const btnB = document.getElementById('brushBlue');
+
+            // Reset rings
+            btnR.classList.remove('ring-2', 'ring-red-500');
+            btnG.classList.remove('ring-2', 'ring-emerald-500');
+            btnB.classList.remove('ring-2', 'ring-blue-500');
+
+            if (color === 'red') btnR.classList.add('ring-2', 'ring-red-500');
+            if (color === 'green') btnG.classList.add('ring-2', 'ring-emerald-500');
+            if (color === 'blue') btnB.classList.add('ring-2', 'ring-blue-500');
+        }
+
+        function setIntensity(val) {
+            brushIntensity = val;
+            document.getElementById('intensityValText').innerText = `+${val} Luce`;
+
+            const btns = document.querySelectorAll('.intensityBtn');
+            btns.forEach(btn => {
+                if (btn.innerText.includes(`+${val}`)) {
+                    btn.className = 'intensityBtn active-intensity text-xs py-1.5 bg-indigo-600 rounded-lg font-semibold transition text-white shadow-md';
+                } else {
+                    btn.className = 'intensityBtn text-xs py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg font-semibold transition text-slate-300';
+                }
+            });
+        }
+
+        function toggleGrid() {
+            showGrid = !showGrid;
+            const gridBtn = document.getElementById('gridBtn');
+            if (showGrid) {
+                gridBtn.classList.add('bg-indigo-950', 'border-indigo-600', 'text-indigo-300');
+            } else {
+                gridBtn.classList.remove('bg-indigo-950', 'border-indigo-600', 'text-indigo-300');
+            }
+            redrawCanvasWithGrid();
+        }
+
+        function redrawCanvasWithGrid() {
+            if (showGrid) {
+                drawPixelGrid();
+            }
+        }
+
+        function drawPixelGrid() {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+            ctx.lineWidth = 1;
+            const step = 20;
+
+            for (let x = 0; x <= canvas.width; x += step) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= canvas.height; y += step) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function paintAt(x, y) {
+            const radius = parseInt(document.getElementById('brushSize').value);
+            
+            // Critical for Additive Synthesis: LIGHTER composition mode
+            ctx.globalCompositeOperation = 'lighter';
+
+            // Radial gradient stroke for realistic light scattering
+            const grad = ctx.createRadialGradient(x, y, 0, x, y, radius);
+            
+            let colorStr = '';
+            if (activeBrush === 'red') colorStr = `rgba(${brushIntensity}, 0, 0, 0.4)`;
+            if (activeBrush === 'green') colorStr = `rgba(0, ${brushIntensity}, 0, 0.4)`;
+            if (activeBrush === 'blue') colorStr = `rgba(0, 0, ${brushIntensity}, 0.4)`;
+
+            grad.addColorStop(0, colorStr);
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (showGrid) drawPixelGrid();
+            updateInspectorAt(x, y);
+        }
+
+        function getCanvasCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
+
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        // Canvas Event Handlers
+        canvas.addEventListener('mousedown', (e) => {
+            isPainting = true;
+            const coords = getCanvasCoordinates(e);
+            paintAt(coords.x, coords.y);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const coords = getCanvasCoordinates(e);
+            updateInspectorAt(coords.x, coords.y);
+            if (isPainting) {
+                paintAt(coords.x, coords.y);
+            }
+        });
+
+        window.addEventListener('mouseup', () => { isPainting = false; });
+        canvas.addEventListener('mouseleave', () => { isPainting = false; });
+
+        // Touch event support for tablets / smartboards
+        canvas.addEventListener('touchstart', (e) => {
+            isPainting = true;
+            const coords = getCanvasCoordinates(e);
+            paintAt(coords.x, coords.y);
+            e.preventDefault();
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            const coords = getCanvasCoordinates(e);
+            updateInspectorAt(coords.x, coords.y);
+            if (isPainting) {
+                paintAt(coords.x, coords.y);
+            }
+            e.preventDefault();
+        });
+
+        canvas.addEventListener('touchend', () => { isPainting = false; });
+
+        function updateInspectorAt(x, y) {
+            if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) return;
+
+            const pixelData = ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data;
+            const r = pixelData[0];
+            const g = pixelData[1];
+            const b = pixelData[2];
+
+            const hexR = r.toString(16).padStart(2, '0').toUpperCase();
+            const hexG = g.toString(16).padStart(2, '0').toUpperCase();
+            const hexB = b.toString(16).padStart(2, '0').toUpperCase();
+            const hexFull = `#${hexR}${hexG}${hexB}`;
+
+            document.getElementById('inspectorSwatch').style.backgroundColor = hexFull;
+            document.getElementById('inspectorHex').innerText = hexFull;
+            document.getElementById('inspectorRgb').innerText = `(R: ${r}, G: ${g}, B: ${b})`;
+
+            // Update mini bars
+            document.getElementById('inspectorBarR').style.width = `${(r / 255) * 100}%`;
+            document.getElementById('inspectorBarG').style.width = `${(g / 255) * 100}%`;
+            document.getElementById('inspectorBarB').style.width = `${(b / 255) * 100}%`;
+
+            document.getElementById('inspectorValR').innerText = r;
+            document.getElementById('inspectorValG').innerText = g;
+            document.getElementById('inspectorValB').innerText = b;
+        }
+
+        function updateMixer() {
+            const r = parseInt(document.getElementById('mixerR').value);
+            const g = parseInt(document.getElementById('mixerG').value);
+            const b = parseInt(document.getElementById('mixerB').value);
+
+            document.getElementById('mixerRVal').innerText = r;
+            document.getElementById('mixerGVal').innerText = g;
+            document.getElementById('mixerBVal').innerText = b;
+
+            const hexR = r.toString(16).padStart(2, '0').toUpperCase();
+            const hexG = g.toString(16).padStart(2, '0').toUpperCase();
+            const hexB = b.toString(16).padStart(2, '0').toUpperCase();
+            const hexFull = `#${hexR}${hexG}${hexB}`;
+
+            document.getElementById('mixerPreview').style.backgroundColor = hexFull;
+            document.getElementById('mixerHex').innerText = hexFull;
+            document.getElementById('mixerRgb').innerText = `rgb(${r}, ${g}, ${b})`;
+        }
+
+        let currentHex = 'FFA500';
+
+        function handleHexInput(val) {
+            let clean = val.replace(/[^0-9A-Fa-f]/g, '').slice(0, 6);
+            if (clean.length === 6) {
+                currentHex = clean.toUpperCase();
+                document.getElementById('nativeColorPicker').value = `#${currentHex}`;
+                updateDecompositionView();
+            }
+        }
+
+        function handleColorPicker(hexVal) {
+            currentHex = hexVal.replace('#', '').toUpperCase();
+            document.getElementById('hexInput').value = currentHex;
+            updateDecompositionView();
+        }
+
+        function setPreset(hexWithHash) {
+            currentHex = hexWithHash.replace('#', '').toUpperCase();
+            document.getElementById('hexInput').value = currentHex;
+            document.getElementById('nativeColorPicker').value = hexWithHash;
+            updateDecompositionView();
+        }
+
+        function updateDecompositionView() {
+            const r = parseInt(currentHex.substring(0, 2), 16) || 0;
+            const g = parseInt(currentHex.substring(2, 4), 16) || 0;
+            const b = parseInt(currentHex.substring(4, 6), 16) || 0;
+
+            const hexR = currentHex.substring(0, 2);
+            const hexG = currentHex.substring(2, 4);
+            const hexB = currentHex.substring(4, 6);
+
+            const percR = ((r / 255) * 100).toFixed(1);
+            const percG = ((g / 255) * 100).toFixed(1);
+            const percB = ((b / 255) * 100).toFixed(1);
+
+            // Update Header & Swatches
+            document.getElementById('decompBigPreview').style.backgroundColor = `#${currentHex}`;
+            document.getElementById('decompHexTitle').innerText = `#${currentHex}`;
+            document.getElementById('decompRgbTitle').innerText = `rgb(${r}, ${g}, ${b})`;
+
+            // Token Breakdown
+            document.getElementById('tokenR').innerText = hexR;
+            document.getElementById('tokenG').innerText = hexG;
+            document.getElementById('tokenB').innerText = hexB;
+
+            // Liquid Container Heights
+            document.getElementById('liquidR').style.height = `${percR}%`;
+            document.getElementById('liquidG').style.height = `${percG}%`;
+            document.getElementById('liquidB').style.height = `${percB}%`;
+
+            // Numeric Statistics
+            document.getElementById('valNumR').innerHTML = `${r} <span class="text-xs text-slate-500 font-normal">/ 255</span>`;
+            document.getElementById('valHexR').innerText = hexR;
+            document.getElementById('valPercR').innerText = `${percR}%`;
+
+            document.getElementById('valNumG').innerHTML = `${g} <span class="text-xs text-slate-500 font-normal">/ 255</span>`;
+            document.getElementById('valHexG').innerText = hexG;
+            document.getElementById('valPercG').innerText = `${percG}%`;
+
+            document.getElementById('valNumB').innerHTML = `${b} <span class="text-xs text-slate-500 font-normal">/ 255</span>`;
+            document.getElementById('valHexB').innerText = hexB;
+            document.getElementById('valPercB').innerText = `${percB}%`;
+
+            // Textual Didactic Explanation Generator
+            let desc = `Questo colore ha un contributo di luce del <strong class="text-red-400">${percR}% per il Rosso</strong>, <strong class="text-emerald-400">${percG}% per il Verde</strong> e <strong class="text-blue-400">${percB}% per il Blu</strong>.`;
+            
+            if (r === g && g === b) {
+                if (r === 0) desc = "Assenza totale di luce: si ottiene il <strong>NERO perfetto (#000000)</strong>.";
+                else if (r === 255) desc = "Tutti e tre i LED di luce sono accesi al massimo: si ottiene il <strong>BIANCO puro (#FFFFFF)</strong>.";
+                else desc = `I tre canali luminosi hanno la stessa intensità (${r}): si ottiene una tonalità di <strong>GRIGIO</strong>.`;
+            }
+            document.getElementById('decompExplanation').innerHTML = desc;
+        }
+
+        window.onload = function() {
+            initCanvas();
+            updateMixer();
+            updateDecompositionView();
+        };
+    </script>
+</body>
+</html>
